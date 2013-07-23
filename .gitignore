@@ -1,0 +1,9 @@
+*.log
+out
+err
+*DS_Store*
+rservicebus-*.gem
+build
+*.xcworkspace
+*/archive/*
+nginx/runtime/*

@@ -1,0 +1,368 @@
+<html>
+	<head>
+        <script src="js/jquery-1.7.2.min.js"></script>
+        <script src="js/knockout-2.1.0.js"></script>
+        <script src="js/js-yaml.min.js"></script>
+        <script src="js/mfs.js"></script>
+        
+        <style>
+            <!--
+            h2 {
+                font-weight: normal;
+            }
+            
+            body {
+                font-family: calibri,arial;
+                font-size: 1.2em;
+                position: relative;
+                margin: 0px;
+            }
+            ul.tubes {
+                list-style: none;
+                padding-left: 1em;
+            }
+            ul.tubes li a {
+                cursor: pointer;
+            }
+            
+            ul.msgs li a {
+                cursor: pointer;
+            }
+            
+            table.tubes {
+                display: none;
+            }
+            .tubes .msgwaiting {
+                font-weight: bold;
+            }
+
+            .middle {
+                position: relative;
+                left: 300px;
+                right: 300px;
+            }
+            
+            table.tube-stats {
+                
+            }
+            table.tube-stats {
+                border: collapse;
+            }
+            table.tube-stats th, table.tube-stats td {
+                border: 1px solid silver;
+                padding: 1px 9px;
+            }
+            
+            table th {
+                white-space: nowrap;
+            }
+
+            div.panel {
+                position: absolute;
+                padding: 1%;
+            }
+
+            div.tubes {
+                left: 0px;
+                width: 20%;
+                height: 100%;
+                background-color: rgb(7,96,138);
+                color: white;
+            }
+
+            div.tube {
+                left: 22%;
+                height: 100%;
+            }
+            
+            div.msg {
+                right: 0;
+                width: 50%;
+                height: 100%;
+                background-color: rgb(7,96,138);
+                color: white;
+            }
+            
+            div.msg table {
+                color: white;
+            }
+            
+            .hide {
+                display: none;
+            }
+            
+            .button {
+                background-color: #0A94D6;
+                border-radius: 5px;
+                padding: 6px 15px;
+                cursor: pointer;
+                color: white;
+                text-decoration: none;
+                font-size: 0.8em;
+            }
+            
+            .button-bar {
+                margin-top: 12px;
+                margin-bottom: 12px;
+                padding: 0;
+                padding-bottom: 0px 15px;
+                padding-top: 0px 15px;
+            }
+            -->
+            </style>
+	</head>
+    
+	<body>
+        <div class="tubes panel">
+            <h2>Tubes</h2>
+            
+            <nav class="button-bar">
+                <a href="refresh" class="button" data-bind="click: refresh">Refresh</a>
+            </nav>
+
+            <ul class="tubes" data-bind="foreach: list">
+                <li><a data-bind="text: label, css: { msgwaiting: ready() > 0 }, click: select"></a></li>
+            </ul>
+
+        </div>
+
+        <div class="tube panel" data-bind="with: tube, css: { hidden: tube() == null }">
+            <h2 data-bind="text: heading"></h2>
+            
+            <nav class="button-bar">
+                <a href="refresh" class="button" data-bind="click: select">Refresh</a>
+                <a href="purge" class="button" data-bind="click: purge, css: { hide: ready() == 0 }">Purge</a>
+            </nav>
+
+            <ul class="msgs" data-bind="foreach: list">
+                <li><a data-bind="text: name, click: select"></a></li>
+            </ul>
+
+            <table class="tube-stats" cellspacing="0">
+                
+                <thead>
+                    <tr>
+                        <th>Ready</th>
+                        <th>Total</th>
+                        <th>Watching</th>
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    <tr>
+                        <td data-bind="text: ready"></td>
+                        <td data-bind="text: total"></td>
+                        <td data-bind="text: watching"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="msg panel" data-bind="with: tube">
+            <div data-bind="with: msg">
+                <h2 data-bind="text: heading"></h2>
+                <nav class="button-bar">
+                    <a href="pop" class="button" data-bind="click: pop">Pop</a>
+                </nav>
+                <table class="msg-detail" cellspacing="0">
+                    
+                    <tbody>
+                        <tr>
+                            <th></th>
+                            <td>
+                            </td>
+                        </tr>
+                    </tbody>
+                    
+                </table>
+                <div data-bind="with: error">
+                    <table class="error-detail" cellspacing="0">
+                        <tbody>
+                            <tr>
+                                <th>Source Queue</th>
+                                <td data-bind="text: sourceQueue"></td>
+                            </tr>
+                            <tr>
+                                <th>Occured At</th>
+                                <td data-bind="text: occurredAt"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="error-detail" colspan='2' data-bind="text: errorMsg"></div>
+                </div>
+
+            </div>
+        </div>
+        
+	</body>
+    
+    <script>
+        function getMsgListForTube( name ) {
+            $.get( "tube/" + name + "/list", function( list ) {
+                  vm.resetMsgs(name);
+                  for( var i in list ) {
+                  var obj = list[i];
+                  vm.addMsg(name, obj);
+                  }
+                  if ( vm.idx[name].list().length ) {
+                  vm.idx[name].list()[0].select();
+                  }
+                  }, "json");
+        }
+        
+        function MsgError( obj ) {
+            var self = this;
+            self.sourceQueue = ko.observable(obj.sourceQueue);
+            self.occurredAt = ko.observable(obj.occurredAt);
+            self.errorMsg = ko.observable(obj.errorMsg);
+        }
+        function Msg( obj, tube ) {
+            var self = this;
+            
+            self.tube = tube;
+            self.idx = obj.idx;
+            self.name = ko.observable(obj.name);
+            self.msgId = ko.observable(obj.msgId);
+            self.error = ko.observable();
+
+            self.heading = ko.computed( function() { return "Msg: " + self.name(); });
+            
+            if ( obj.lastError != undefined ) {
+                self.error( new MsgError(obj.lastError) );
+            }
+
+            self.select = function() {
+                self.tube.msg( self );
+            }
+            self.pop = function() {
+                $.ajax({
+                       url: "tube/" + self.tube.name() + "/" + self.idx,
+                       type: "DELETE"
+                       }).done(function() {
+                               self.tube.select();
+                               });
+            }
+        }
+        
+        function Tube( name, ready, total, watching ) {
+            var self = this;
+
+            self.list = ko.observableArray();
+            self.name = ko.observable( name );
+//            self.ready = ko.observable( ready );
+            self.ready = ko.computed( function() { return self.list().length; } );
+            self.total = ko.observable( total );
+            self.watching = ko.observable( watching );
+            
+            self.label = ko.computed( function() {
+                                     if ( self.ready() > 0 ) {
+                                     return self.name() + " (" + self.ready() + ")";
+                                     } else {
+                                     return self.name();
+                                     }
+                                     });
+            self.heading = ko.computed( function() { return "Tube: " + self.name(); });
+
+            self.msg = ko.observable();
+
+            self.select = function() {
+                console.log( "Tube Select" );
+                self.msg("");
+                if ( self.ready() > 0 ) {
+                    getMsgListForTube( self.name() );
+                }
+                vm.tube( self );
+            }
+            
+            self.addMsg = function( obj ) {
+                self.list.push( new Msg( obj, self ) );
+            }
+            self.resetMsgs = function() {
+                self.list.removeAll();
+            }
+
+            self.purge = function() {
+                $.ajax({
+                       url: "tube/" + name + "/list",
+                       type: "DELETE"
+                       }).done(function() {
+                               self.select();
+                               });
+            }
+
+        }
+        
+        function ViewModel() {
+            var self = this;
+
+            self.msg = ko.observable();
+            self.tube = ko.observable();
+
+            self.list = ko.observableArray();
+            self.idx = {};
+            self.addTube = function( name, ready, total, watching ) {
+                var tube = new Tube( name, ready, total, watching );
+                self.list.push( tube );
+                self.idx[name] = tube;
+                return tube;
+            }
+
+            self.addMsg = function( tubename, raw ) {
+                self.idx[tubename].addMsg( raw );
+            }
+            self.resetMsgs = function( tubename ) {
+                self.idx[tubename].resetMsgs();
+            }
+
+            self.setDefaultTube = function() {
+                self.list()[0].select();
+            }
+
+            self.reset = function() {
+                self.msg("");
+                self.tube("");
+                
+                self.list.removeAll();
+                self.idx = {};
+            }
+
+            self.refresh = function() {
+                load();
+            }
+        }
+        
+        
+        function finishedDataPrep() {
+            vm.setDefaultTube();
+        }
+
+        function tubeDetail() {
+            for( var i in mfsResponseList ) {
+                var obj = mfsResponseList[i];
+                vm.addTube( obj.name, obj["current-jobs-ready"], obj["total-jobs"], obj["current-watching"] );
+                getMsgListForTube( obj.name )
+            }
+            
+            finishedDataPrep();
+        }
+
+        function load() {
+            vm.reset();
+            $.get( "tube/", function( list ) {
+                  mfsInit( {} );
+                  for( var i in list ) {
+                  var name = list[i];
+                  mfsFileList.push( "tube/" + name );
+                  }
+                  mfsGo( tubeDetail );
+                  }, "json");
+        }
+        
+        var vm = new ViewModel();
+        ko.applyBindings( vm )
+        
+        load();
+        
+        </script>
+    
+</html>
