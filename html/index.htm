@@ -106,6 +106,7 @@
                 padding-bottom: 0px 15px;
                 padding-top: 0px 15px;
             }
+            
             -->
             </style>
 	</head>
@@ -119,7 +120,7 @@
             </nav>
 
             <ul class="tubes" data-bind="foreach: list">
-                <li><a data-bind="text: label, css: { msgwaiting: ready() > 0 }, click: select"></a></li>
+                <li><a data-bind="text: label, click: select"></a></li>
             </ul>
 
         </div>
