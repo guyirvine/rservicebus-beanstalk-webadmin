@@ -20,9 +20,32 @@
             ul.tubes {
                 list-style: none;
                 padding-left: 1em;
+                padding-right: 1em;
             }
+
+            ul.tubes li {
+                position: relative;
+                padding: 0.2em;
+                margin: 1px;
+            }
+            ul.tubes li:after {
+                font-size: 0.6em;
+                position: absolute;
+                right: 0.5em;
+                content: '\25B6';
+                top: 0.6em;
+            }
+            ul.tubes li.selected:after {
+                color: black;
+            }
+
+            ul.tubes li.selected, ul.tubes li:hover {
+                background-color: #0A94D6;
+            }
+
             ul.tubes li a {
                 cursor: pointer;
+                display: block;
             }
             
             ul.msgs li a {
@@ -103,10 +126,10 @@
                 margin-top: 12px;
                 margin-bottom: 12px;
                 padding: 0;
-                padding-bottom: 0px 15px;
-                padding-top: 0px 15px;
+                padding-bottom: 15px;
+                padding-top: 15px;
             }
-            
+
             -->
             </style>
 	</head>
@@ -119,8 +142,8 @@
                 <a href="refresh" class="button" data-bind="click: refresh">Refresh</a>
             </nav>
 
-            <ul class="tubes" data-bind="foreach: list">
-                <li><a data-bind="text: label, click: select"></a></li>
+            <ul class="tubes clickable" data-bind="foreach: list">
+                <li data-bind="css: { selected: vm.tube() != '' && vm.tube().name() == name() }"><a data-bind="text: label, click: select"></a></li>
             </ul>
 
         </div>
@@ -133,7 +156,7 @@
                 <a href="purge" class="button" data-bind="click: purge, css: { hide: ready() == 0 }">Purge</a>
             </nav>
 
-            <ul class="msgs" data-bind="foreach: list">
+            <ul class="msgs clickable" data-bind="foreach: list">
                 <li><a data-bind="text: name, click: select"></a></li>
             </ul>
 
@@ -162,6 +185,7 @@
                 <h2 data-bind="text: heading"></h2>
                 <nav class="button-bar">
                     <a href="pop" class="button" data-bind="click: pop">Pop</a>
+                    <a href="return" class="button" data-bind="click: return">Pop</a>
                 </nav>
                 <table class="msg-detail" cellspacing="0">
                     
