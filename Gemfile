@@ -1,6 +1,5 @@
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-gem "beanstalk-client"
-gem "json"
-gem "sendfile"
-
+gem 'beanstalk-client'
+gem 'json'
+gem 'sinatra'

@@ -1,0 +1,148 @@
+<html>
+	<head>
+		<link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css'>
+		<script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js'></script>
+		<script src='/vendor.js'></script>
+
+		<style>
+			.templates {
+				display: none;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class='container'>
+		</div>
+
+		<div class='templates'>
+			<div class='board'>
+				<div>
+					<div class='tubes'>
+						<div class='title'>Tubes</div>
+						<ul>
+							<li><a href='tube'></a></li>
+						</ul>
+					</div>
+					<div class='tube'>
+						<div class='title'>Jobs</div>
+						<ul class='jobs'>
+							<li><a href='msg'></a></li>
+						</ul>
+					</div>
+					<div class='msg'>
+						<div class='title'>Msg</div>
+						<ul>
+							<li>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+
+	<script>
+		var app = {};
+
+		app.tube = {};
+		app.msg = {};
+
+		app.get_tubes = function () {
+			$.getJSON('/tube', function(list) {
+				_.each(list, function(tube_name) {
+					app.tube[tube_name] = [];
+					app.get_tube_list(tube_name);
+
+					var li = app.tubes_li.clone();
+					li.addClass(tube_name);
+					li.find('a').text(tube_name);
+					li.find('a').attr('href', '#tube+' + tube_name);
+					app.tubes_ul.append(li);
+				});
+			});
+		};
+
+		app.get_tube_list = function(tube_name) {
+			$.getJSON('/tube/' + tube_name + '/list', function(list) {
+				app.tube[tube_name] = list;
+				app.tubes_ul.find('.' + tube_name + ' a').text(tube_name + ' (' + list.length + ')');
+			});
+		}
+
+		app.show_tube = function (name) {
+			app.jobs_ul.empty();
+			$('.tube .title').text('Tube: ' + name);
+			_.each(app.tube[name], function(job) {
+				app.msg[job.msg_id]=job;
+				var li = app.jobs_li.clone();
+				li.find('a').text(job.name);
+				li.find('a').attr('href', '#msg+' + job.msg_id);
+				app.jobs_ul.append(li);
+			});
+		};
+
+		app.init = function () {
+			var view = $('.templates .board').clone();
+
+			app.tubes_ul = view.find('.tubes ul');
+			app.tubes_li = app.tubes_ul.find('li').remove();
+
+			app.jobs_ul = view.find('.jobs');
+			app.jobs_li = app.jobs_ul.find('li').remove();
+
+			app.get_tubes();
+
+			$('.container').append(view);
+		};
+
+		app.tube_view = function (name) {
+			app.show_tube(name);
+		};
+
+		app.msg_view = function (idx) {
+			console.log('app.msg_view.1 ', app.msg[idx]);
+			$('.msg ul li').text(JSON.stringify(app.msg[idx]));
+		};
+
+		app.show_view = function (hash) {
+		    var routes, hashParts, viewFn;
+
+		    if (hash === "") {
+		        window.location.hash = "#board";
+		        return;
+		    }
+
+		    routes = {
+		        '#tube': app.tube_view,
+		        '#msg': app.msg_view
+		    };
+
+		    hashParts = hash.split('+');
+		    hashParts[1] = hashParts.slice(1).join('+');
+		    viewFn = routes[hashParts[0]];
+		    console.log("viewFn: ", hashParts[0], hashParts[1]);
+		    if (viewFn) {
+		        viewFn(hashParts[1]);
+		    }
+		};
+
+		app.apponready = function () {
+			app.init();
+
+			window.onhashchange = function () {
+	        app.show_view(window.location.hash);
+	    };
+
+      window.location.hash = 'board';
+		};
+
+		$(window).ready(app.apponready);
+
+	</script>
+
+</html>

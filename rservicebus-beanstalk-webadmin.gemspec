@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
   s.name        = 'rservicebus-beanstalk-webadmin'
   s.version     = '0.0.1'
-  s.date        = '2013-07-24'
-  s.summary     = "RServiceBus"
+  s.date        = '2016-08-02'
+  s.summary     = "rservicebus-beanstalk-webadmin'"
   s.description = "A web based admin interface for beanstalk, targeted at rservicebus users."
   s.authors     = ["Guy Irvine"]
   s.email       = 'guy@guyirvine.com'
